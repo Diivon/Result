@@ -8,26 +8,33 @@
 namespace gc {
 
 #pragma region ok, err
+	template<class T, class E>
+	class Result;
+
 	namespace detail {
 		template<class T>
-		struct _Ok {
+		class _Ok {
+			friend _Ok<T> Ok(T && t);
+			template<class B>
+			friend class ::gc::Result<T, B>;
 			T _data;;
-		public:
 			_Ok(T && t) :_data(std::forward<T>(t))
 			{}
 		};
 		template<class T>
-		struct _Err {
+		class _Err {
+			friend _Err<T> Err(T && t);
+			template<class A, class B>
+			friend class ::gc::Result;
 			T _data;
-		public:
 			_Err(T && t) :_data(std::forward<T>(t))
 			{}
 		};
 	}
 	template<class T>
-	detail::_Ok<T> ok(T && t) { return { std::forward<T>(t) }; }
+	detail::_Ok<T> Ok(T && t) { return { std::forward<T>(t) }; }
 	template<class T>
-	detail::_Err<T> err(T && t) { return { std::forward<T>(t) }; }
+	detail::_Err<T> Err(T && t) { return { std::forward<T>(t) }; }
 #pragma endregion
 	
 	template<class T, class E>
@@ -77,18 +84,18 @@ namespace gc {
 			static_assert(!std::is_same<decltype(f(std::move(std::declval<T>()))), void>::value, "gc::Result::map() argument cannot return void");
 
 			if (is_ok())
-				return Result<Y, E>(ok(f(std::move(_get_value()))));
+				return Result<Y, E>(Ok(f(std::move(_get_value()))));
 			else
-				return Result<Y, E>(err(std::move(_get_error())));
+				return Result<Y, E>(Err(std::move(_get_error())));
 		}
 		template<class F, class Y = decltype(std::declval<F>()(std::move(std::declval<T>())))>
 		auto map_error(F && f) noexcept {
 			static_assert(!std::is_same<decltype(f(std::move(std::declval<T>()))), void>::value, "gc::Result::map() argument cannot return void");
 
 			if (is_ok())
-				return Result<Y, E>(ok(std::move(_get_value())));
+				return Result<Y, E>(Ok(std::move(_get_value())));
 			else
-				return Result<Y, E>(err(f(std::move(_get_error()))));
+				return Result<Y, E>(Err(f(std::move(_get_error()))));
 		}
 		template<class F>
 		Result & on_success(F && f) noexcept {
@@ -96,13 +103,23 @@ namespace gc {
 				f(_get_value());
 			return *this;
 		}
+		
 		template<class F>
-		Result & on_fail(F && f) noexcept {
+		typename std::enable_if<std::is_same<decltype(std::declval<F>()(std::declval<E &>())), void>::value, Result &>::type 
+		on_fail(F && f) noexcept {
 			//TODO: add another method with arg that takes no args
 			static_assert(std::is_same<decltype(f(std::declval<E &>())), void>::value, "gc::Result::on_fail() argument cannot return anything(use map_err_to_value to convert err -> value)");
 
 			if (is_err())
 				f(_get_error());
+			return *this;
+		}
+		template<class F>
+		typename std::enable_if<!std::is_same<decltype(std::declval<F>()(std::declval<E &>())), void>::value, Result &>::type
+		on_fail(F && f) {
+			static_assert(std::is_nothrow_constructible<T, decltype(std::declval<F>()(std::declval<E &>()))>::value, "gc::Result::on_fail argument must return value, which can be used to construct T with no exceptions");
+			if (is_err())
+				_data.emplace<T>(f(_get_error()));
 			return *this;
 		}
 		T unwrap_value() {

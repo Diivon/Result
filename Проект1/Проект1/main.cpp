@@ -41,20 +41,31 @@ void assert(bool cond) {
 
 gc::Result<int, Err> get(int a) {
 	if (a > 20)
-		return gc::ok(a * a);
+		return gc::Ok(a * a);
 	else
 		if (a < 0)
 			return {};
 		else
-			return gc::err(Err());
+			return gc::Err(Err());
 }
 
 void result_tests() {
+	//1
 	assert(gc::Result<int, Error>().is_err());
-	assert(gc::Result<int, Error>(Error::B).is_err());
-	assert(gc::Result<int, Err>(5).is_ok());
-	assert(gc::Result<int, Error>(5).on_success([](auto & i) {i *= 2; }).unwrap_value() == 10);
-	assert(gc::Result<int, Error>(5).on_fail([](auto & i) {}).unwrap_value() == 5);
+	//2
+	assert(gc::Result<int, Error>(gc::Err(Error::B)).is_err());
+	//3
+	assert(gc::Result<int, Err>(gc::Ok(5)).is_ok());
+	//4
+	assert(gc::Result<int, Error>(gc::Ok(5)).on_success([](auto & i) {i *= 2; }).unwrap_value() == 10);
+	//5
+	assert(gc::Result<int, Error>(gc::Ok(5)).on_fail([](auto & i) {}).unwrap_value() == 5);
+	//6
+	assert(gc::Result<int, Error>(gc::Err(Error::B)).on_fail([](auto & i) { 
+		if (i == Error::A)
+			return 14;
+		return 228;
+	}).unwrap_value() == 228);
 }
 
 int main() {
