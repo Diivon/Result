@@ -1,28 +1,14 @@
 #include <vector>
 #include <iostream>
+#include <string>
 
 #include "Result.hpp"
+#include "Traits.h"
 
 struct INonCopyable {
 	INonCopyable() {}
 	INonCopyable(const INonCopyable &) = delete;
 	void operator = (const INonCopyable &) = delete;
-};
-
-struct A :INonCopyable {
-	std::vector<int> data;
-	A() {}
-	A(A && a) noexcept :
-		data(std::move(a.data))
-	{}
-	void push(int a) {
-		data.push_back(a);
-	}
-};
-class Err : INonCopyable {
-public:
-	Err() noexcept {}
-	Err(Err && e) noexcept {}
 };
 
 enum class Error {
@@ -39,37 +25,41 @@ void assert(bool cond) {
 	std::cout << std::endl;
 }
 
-gc::Result<int, Err> get(int a) {
+gc::Result<int, Error> get(int a) {
 	if (a > 20)
 		return gc::Ok(a * a);
 	else
 		if (a < 0)
 			return {};
 		else
-			return gc::Err(Err());
+			return gc::Err(Error::A);
 }
 
-void result_tests() {
-	//1
-	assert(gc::Result<int, Error>().is_err());
-	//2
-	assert(gc::Result<int, Error>(gc::Err(Error::B)).is_err());
-	//3
-	assert(gc::Result<int, Err>(gc::Ok(5)).is_ok());
-	//4
-	assert(gc::Result<int, Error>(gc::Ok(5)).on_success([](auto & i) {i *= 2; }).unwrap_value() == 10);
-	//5
-	assert(gc::Result<int, Error>(gc::Ok(5)).on_fail([](auto & i) {}).unwrap_value() == 5);
-	//6
-	assert(gc::Result<int, Error>(gc::Err(Error::B)).on_fail([](auto & i) { 
-		if (i == Error::A)
-			return 14;
-		return 228;
-	}).unwrap_value() == 228);
+template<class T>
+void debug(T && t) {
+	std::cout << gc::traits::TypeName<T>::get() << ':' << ' ' << t << std::endl;
 }
 
 int main() {
-	result_tests();
+	get(-5)
+		.on_error([](Error && e) -> gc::Result<int, Error>{
+			if (e == Error::A)
+				return { gc::Ok(700) };
+			return { gc::Err(std::move(e)) };
+		})
+		.on_success([](int && val) {
+			std::cout << val << std::endl;
+			return gc::Ok(std::move(val));
+		})
+		.map_result_type<std::vector<int>>([](int && val) {
+			return std::vector<int>{ val * val, 2, 3, 4, 5, 6 };
+		})
+		.on_success([](std::vector<int> && val) {
+			for (auto & i : val)
+				std::cout << i << ' ';
+			return gc::Ok(std::move(val));
+		})
+	;
 	std::cin.get();
 	return 0;
 }
