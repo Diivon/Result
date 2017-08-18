@@ -1,6 +1,5 @@
 #pragma once
 #include <variant>
-#include <utility>
 
 #include "Traits.h"
 
@@ -35,7 +34,6 @@ namespace gc {
 		return detail::_Err<T>{ std::move(t) };
 	}
 #pragma endregion
-	
 	template<class T, class E>
 	class Result {
 		std::variant<T, E> _data;
@@ -167,4 +165,23 @@ namespace gc {
 			return std::move(*this);
 		}
 	};
+
+	enum class Error {
+		InvalidArgument,
+		DomainError,
+		SizeError,
+		OutOfRange,
+		FutureError,
+		RangeError,
+		OverflowError,
+		UnderflowError,
+		BadAlloc,
+		InsufficientRights,
+		UnknownError
+	};
+
+	template<class T, class ... Args>
+	Result<T, Error> make(Args ... args) {
+		return Ok(T{std::forward<Args>(args)...});
+	}
 }

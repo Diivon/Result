@@ -4,6 +4,7 @@
 
 #include "Result.hpp"
 #include "Traits.h"
+#include "Allocator.h"
 
 struct INonCopyable {
 	INonCopyable() {}
@@ -41,6 +42,7 @@ void debug(T && t) {
 }
 
 int main() {
+	auto a = gc::make<gc::memory::Slice>(nullptr, 5u);
 	get(-5)
 		.on_error([](Error && e) -> gc::Result<int, Error>{
 			if (e == Error::A)

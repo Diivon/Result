@@ -115,6 +115,8 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Allocator.h" />
+    <ClInclude Include="Memory.h" />
     <ClInclude Include="Result.hpp" />
     <ClInclude Include="Traits.h" />
   </ItemGroup>
