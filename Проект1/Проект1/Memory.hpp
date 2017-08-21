@@ -78,7 +78,12 @@ namespace gc {
 			static constexpr detecter detection(...) {}
 			template<class Y>
 			static constexpr 
-			typename std::enable_if<std::is_same_v<decltype(Y::deallocate(std::declval<gc::memory::Slice>())), void> && std::is_same_v<decltype(Y::allocate(std::declval<unsigned int>())), Result<memory::Slice, Error>>, void>::type
+			typename std::enable_if<
+				   std::is_same_v<decltype(Y::allocate(std::declval<unsigned int>())), Result<memory::Slice, Error>>//if allocate return result
+				&& std::is_same_v<decltype(Y::deallocate(std::declval<gc::memory::Slice &&>())), void> 				//if deallocate return void
+				&& noexcept(Y::allocate(std::declval<unsigned>()))													//if allocate is noexcept
+				&& noexcept(Y::deallocate(std::declval<gc::memory::Slice>()))										//if deallocate is noexcept
+				, void>::type
 			detection(Y &&) {}
 		public:
 			static constexpr bool value = !std::is_same_v<decltype(detection(std::declval<T>())), detecter>;

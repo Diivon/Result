@@ -1,4 +1,3 @@
-#include <vector>
 #include <iostream>
 #include <string>
 
@@ -13,14 +12,6 @@ struct INonCopyable {
 	INonCopyable(const INonCopyable &) = delete;
 	void operator = (const INonCopyable &) = delete;
 };
-struct A : INonCopyable{
-	A(A &&) noexcept {}
-	void operator = (A &&) noexcept {}
-};
-
-enum class Error {
-	A, B, C
-};
 
 void assert(bool cond) {
 	static uint32_t count = 1;
@@ -32,14 +23,11 @@ void assert(bool cond) {
 	std::cout << std::endl;
 }
 
-gc::Result<int, Error> get(int a) {
+gc::Result<int, gc::Error> get(int a) {
 	if (a > 20)
 		return gc::Ok(a * a);
 	else
-		if (a < 0)
-			return {};
-		else
-			return gc::Err(Error::A);
+		return gc::Err(gc::Error::DomainError);
 }
 
 template<class T>
@@ -47,10 +35,19 @@ void debug(T && t) {
 	std::cout << gc::traits::TypeName<T>::get() << ':' << ' ' << t << std::endl;
 }
 
+struct A : INonCopyable {
+	int a;
+	A(A &&) noexcept {}
+	A(int && b) noexcept : a(b) {
+		std::cout << "&&" << std::endl;
+	}
+};
+
 int main() {
-	gc::container::Vector<int>::make(5)
-		.on_success([](gc::container::Vector<int> && v){
-			std::cout << v.length();
+	using namespace gc::container;
+	Vector<A>::make_with_capacity(5)
+		.on_success([](Vector<A> && v) {
+			assert(v.capacity() == 5);
 			return gc::Ok(std::move(v));
 		})
 	;

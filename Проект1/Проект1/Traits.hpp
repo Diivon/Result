@@ -79,11 +79,11 @@ namespace gc {
 	struct TypeName
 	{
 		inline static std::string get() {
-			static constexpr size_t FRONT_SIZE = sizeof("gc::traits::TypeName<");
+			static constexpr size_t FRONT_SIZE = sizeof("gc::TypeName<");
 			static constexpr size_t BACK_SIZE = sizeof(">::get");
 			static const char * firstPtr = __FUNCTION__ + FRONT_SIZE - 1;
 			static const char * lastPtr = __FUNCTION__ + sizeof(__FUNCTION__) - BACK_SIZE;
-			return std::string(firstPtr, lastPtr - firstPtr);
+			return { firstPtr, (const unsigned)(lastPtr - firstPtr) };
 		}
 	};
 }
