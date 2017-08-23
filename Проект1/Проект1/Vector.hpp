@@ -8,7 +8,7 @@
 namespace gc {
 	namespace container {
 		template<class T, class Alloc = gc::memory::Allocator>
-		struct Vector {
+		struct Vector : INonCopyable {
 			static_assert(gc::traits::is_gc_allocator_v<Alloc>,
 				"second template argument do not match gc_allocator trait");
 		public:
@@ -17,14 +17,15 @@ namespace gc {
 
 			unsigned length() const noexcept;
 			unsigned capacity() const noexcept;
-			T & operator [] (unsigned i) noexcept;
-			const T & operator [] (unsigned i) const noexcept;
+			Result<T &, Error> operator [] (unsigned i) noexcept;
+			Result<const T &, Error> operator [] (unsigned i) const noexcept;
 
 			Vector && move() noexcept;
 
 			template<class ... Args>
 			static Result<Vector<T, Alloc>, Error> make(unsigned count, Args && ... args) noexcept;
 			static Result<Vector<T, Alloc>, Error> make_with_capacity(unsigned capacity) noexcept;
+			static Result<Vector<T, Alloc>, Error> make_from_raw(T * ptr, unsigned size, T * last = ptr) noexcept
 		private:
 			///slice of allocated memory
 			memory::Slice _mem;
@@ -52,7 +53,7 @@ namespace gc {
 
 
 #pragma region Vector implementation
-	#pragma region Vector constructors / destructor
+	#pragma region constructors / destructor
 		//move constructor
 		template<class T, class Alloc> 
 		Vector<T, Alloc>::Vector(Vector && v) noexcept:
@@ -87,6 +88,8 @@ namespace gc {
 		Result<Vector<T, Alloc>, Error> Vector<T, Alloc>::make(unsigned count, Args && ... args) noexcept {
 			static_assert(std::is_nothrow_constructible<T, Args && ...>::value, 
 				"gc::container::Vector<T>::make(size, args...) T must be nothrow constructible with args");
+			if (count == 0)
+				return Ok(Vector<T, Alloc>{memory::Slice::null, nullptr});
 			return Alloc::allocate(sizeof(T) * count)
 				.on_success([&args..., &count](memory::Slice && sl) {
 					T * ptr = sl.begin_as<T>();
@@ -110,7 +113,7 @@ namespace gc {
 			;
 		}
 	#pragma endregion
-	#pragma region make
+	#pragma region methods
 		template<class T, class Alloc>
 		unsigned Vector<T, Alloc>::length() const noexcept {
 			return _last - _mem.begin_as<T>();
@@ -120,14 +123,17 @@ namespace gc {
 			return _mem.end_as<T>() - _mem.begin_as<T>();
 		}
 		template<class T, class Alloc>
-		T & Vector<T, Alloc>::operator [](unsigned i) noexcept {
-			return _mem.begin_as<T>()[i];
+		Result<T &, Error> Vector<T, Alloc>::operator [](unsigned i) noexcept {
+			if (i > length() || (_mem.begin_as<void>() == nullptr))
+				return Err(Error::OutOfRange);
+			return Ok(_mem.begin_as<T>()[i]);
 		}
 		template<class T, class Alloc>
-		const T & Vector<T, Alloc>::operator [](unsigned i) const noexcept {
-			return _mem.begin_as<T>()[i];
+		Result<const T &, Error> Vector<T, Alloc>::operator [](unsigned i) const noexcept {
+			if (i > length() || (_mem.begin_as<void>() == nullptr))
+				return Err(Error::OutOfRange);
+			return Ok(_mem.begin_as<T>()[i]);
 		}
-
 		template<class T, class Alloc>
 		Vector<T, Alloc> && Vector<T, Alloc>::move() noexcept {
 			return std::move(*this);

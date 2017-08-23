@@ -75,6 +75,17 @@ namespace gc {
 			};
 		}
 	}
+	class INonCopyable {
+		INonCopyable(const INonCopyable &) = delete;
+		void operator = (const INonCopyable &) = delete;
+	};
+	class INonMoveable {
+		INonMoveable(INonMoveable &&) = delete;
+		void operator = (INonCopyable &&) = delete;
+	};
+	class INonConstructible : INonCopyable, INonMoveable {
+		INonConstructible() = delete;
+	};
 	template<class T>
 	struct TypeName
 	{

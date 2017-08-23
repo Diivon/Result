@@ -9,7 +9,7 @@ namespace gc {
 #pragma region ok, err
 	namespace detail {
 		template<class T>
-		struct _Ok {
+		struct _Ok : INonCopyable {
 			static_assert(!std::is_reference_v<T>,
 				"gc::detail::_Ok<T> cannot contain reference as T");
 			T _data;
@@ -17,7 +17,7 @@ namespace gc {
 			{}
 		};
 		template<class T>
-		struct _Err {
+		struct _Err : INonCopyable {
 			static_assert(!std::is_reference_v<T>,
 				"gc::detail::_Err<T> cannot contain reference as T");
 			T _data;
@@ -39,7 +39,7 @@ namespace gc {
 	}
 #pragma endregion
 	template<class T, class E>
-	class Result {
+	class Result : INonCopyable {
 		static_assert(!std::is_reference_v<T>,
 			"gc::Result<T, E> cannot contain reference as T");
 		static_assert(!std::is_reference_v<E>,
@@ -215,9 +215,4 @@ namespace gc {
 		InsufficientRights,
 		UnknownError
 	};
-
-	template<class T, class ... Args>
-	Result<T, Error> make(Args ... args) {
-		return Ok(T{std::forward<Args>(args)...});
-	}
 }

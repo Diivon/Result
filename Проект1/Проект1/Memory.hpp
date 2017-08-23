@@ -4,7 +4,7 @@
 
 namespace gc {
 		namespace detail {
-			struct _Ptr {
+			struct _Ptr : INonCopyable {
 				void * _ptr;
 				template<class T>
 				_Ptr(T * t) : _ptr(t)
@@ -20,7 +20,7 @@ namespace gc {
 			};
 		}
 	namespace memory {
-		class Slice {
+		class Slice : INonCopyable {
 			char * _data;
 			unsigned int _size;
 			Slice(char * ptr, unsigned int size) noexcept :

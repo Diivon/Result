@@ -1,3 +1,4 @@
 ﻿  main.cpp
-  Проект1.vcxproj -> D:\Влад\Документы\GitHub\Result\Проект1\Debug\Проект1.exe
-  Проект1.vcxproj -> D:\Влад\Документы\GitHub\Result\Проект1\Debug\Проект1.pdb (Partial PDB)
+  LINK : не найден или не выполнена сборка C:\Users\XTreme.ws\Desktop\Result\Result\Проект1\Debug\Проект1.exe при последней инкрементной компоновке; выполняется полная компоновка
+  Проект1.vcxproj -> C:\Users\XTreme.ws\Desktop\Result\Result\Проект1\Debug\Проект1.exe
+  Проект1.vcxproj -> C:\Users\XTreme.ws\Desktop\Result\Result\Проект1\Debug\Проект1.pdb (Partial PDB)

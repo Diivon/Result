@@ -48,7 +48,7 @@ int main() {
 	Vector<A>::make_with_capacity(5)
 		.on_success([](Vector<A> && v) {
 			assert(v.capacity() == 5);
-			return gc::Ok(std::move(v));
+			return gc::Ok(v.move());
 		})
 	;
 	std::cin.get();
