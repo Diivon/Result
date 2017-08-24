@@ -117,6 +117,7 @@
   <ItemGroup>
     <ClInclude Include="Allocator.hpp" />
     <ClInclude Include="Memory.hpp" />
+    <ClInclude Include="Range.hpp" />
     <ClInclude Include="Result.hpp" />
     <ClInclude Include="Traits.hpp" />
     <ClInclude Include="Vector.hpp" />

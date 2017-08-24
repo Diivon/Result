@@ -9,7 +9,7 @@ namespace gc {
 #pragma region ok, err
 	namespace detail {
 		template<class T>
-		struct _Ok : INonCopyable {
+		struct _Ok {
 			static_assert(!std::is_reference_v<T>,
 				"gc::detail::_Ok<T> cannot contain reference as T");
 			T _data;
@@ -17,7 +17,7 @@ namespace gc {
 			{}
 		};
 		template<class T>
-		struct _Err : INonCopyable {
+		struct _Err {
 			static_assert(!std::is_reference_v<T>,
 				"gc::detail::_Err<T> cannot contain reference as T");
 			T _data;

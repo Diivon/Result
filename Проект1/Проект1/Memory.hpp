@@ -40,6 +40,9 @@ namespace gc {
 			Slice && move() noexcept {
 				return static_cast<Slice &&>(*this);
 			}
+			Slice copy() const noexcept {
+				return { _data, _size };
+			}
 			template<class T>
 			T * begin_as() const noexcept {
 				return reinterpret_cast<T *>(_data);

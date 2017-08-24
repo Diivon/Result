@@ -78,10 +78,14 @@ namespace gc {
 	class INonCopyable {
 		INonCopyable(const INonCopyable &) = delete;
 		void operator = (const INonCopyable &) = delete;
+	public:
+		INonCopyable() {}
 	};
 	class INonMoveable {
 		INonMoveable(INonMoveable &&) = delete;
 		void operator = (INonCopyable &&) = delete;
+	public:
+		INonMoveable() {}
 	};
 	class INonConstructible : INonCopyable, INonMoveable {
 		INonConstructible() = delete;

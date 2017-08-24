@@ -7,12 +7,6 @@
 #include "Memory.hpp"
 #include "Vector.hpp"
 
-struct INonCopyable {
-	INonCopyable() {}
-	INonCopyable(const INonCopyable &) = delete;
-	void operator = (const INonCopyable &) = delete;
-};
-
 void assert(bool cond) {
 	static uint32_t count = 1;
 	std::cout << "test #" << count++;
@@ -35,7 +29,7 @@ void debug(T && t) {
 	std::cout << gc::traits::TypeName<T>::get() << ':' << ' ' << t << std::endl;
 }
 
-struct A : INonCopyable {
+struct A : gc::INonCopyable {
 	int a;
 	A(A &&) noexcept {}
 	A(int && b) noexcept : a(b) {
@@ -45,10 +39,14 @@ struct A : INonCopyable {
 
 int main() {
 	using namespace gc::container;
-	Vector<A>::make_with_capacity(5)
-		.on_success([](Vector<A> && v) {
-			assert(v.capacity() == 5);
-			return gc::Ok(v.move());
+	Vector<int>::make(5, 45)
+		.on_success([](Vector<int> && v1) {
+			Vector<int>::make(5, 45)
+				.on_success([&](Vector<int> && v2) {
+					assert(v1 == v2);
+					return gc::Ok(v2.move());
+				});
+			return gc::Ok(v1.move());
 		})
 	;
 	std::cin.get();
