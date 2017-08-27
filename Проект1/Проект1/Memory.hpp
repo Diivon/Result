@@ -54,6 +54,9 @@ namespace gc {
 			unsigned int size() const noexcept {
 				return _size;
 			}
+			void inc_size(unsigned int i) noexcept{
+				_size += i;
+			}
 			template<class T, class Y>
 			static Result<Slice, Error> make(T * begin, Y * end) {
 				if (begin > end)

@@ -74,6 +74,22 @@ namespace gc {
 				static constexpr bool value = true;
 			};
 		}
+		template<class T>
+		class is_gc_class {
+			struct detecter {};
+			static constexpr detecter detection(...) {}
+			template<class Y>
+			static constexpr 
+			typename std::enable_if<
+				   std::is_same_v<decltype(std::declval<Y>().move()), Y &&>		//if has "move()"
+				&& std::is_same_v<decltype(std::declval<Y>().copy()), Y>		//if has "copy()"
+				, void>::type
+			detection(Y &&) {}
+		public:
+			static constexpr bool value = !std::is_same_v<decltype(detection(std::declval<T>())), detecter>;
+		};
+		template<class T>
+		constexpr bool is_gc_class_v = is_gc_class<T>::value;
 	}
 	class INonCopyable {
 		INonCopyable(const INonCopyable &) = delete;

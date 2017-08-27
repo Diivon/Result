@@ -5,7 +5,19 @@
 
 
 namespace gc {
-
+	enum class Error {
+		InvalidArgument,
+		DomainError,
+		SizeError,
+		OutOfRange,
+		FutureError,
+		RangeError,
+		OverflowError,
+		UnderflowError,
+		BadAlloc,
+		InsufficientRights,
+		UnknownError
+	};
 #pragma region ok, err
 	namespace detail {
 		template<class T>
@@ -122,7 +134,10 @@ namespace gc {
 			static_assert(std::is_nothrow_constructible_v<Y, gc::traits::function::return_type<F, E &&>::type>,
 				"gc::Result<T, E>::map_error_type<Y>(f) -> gc::Result<T, Y> f must return value, which can be used to construct Y with no exceptions");
 
-			return std::move(is_ok() ? Ok(_get_value()) : f(_get_error()));
+			if (is_ok())
+				return std::move(Ok(_get_value()));
+			else
+				return std::move(f(_get_error()));
 		}
 		template<class F>
 		Result & on_success(F && f) noexcept {
@@ -161,7 +176,7 @@ namespace gc {
 			if (is_ok())
 				return _get_value();
 			else
-				return {std::forward<Args>(args)...};
+				return std::forward<Args>(args)...;
 		}
 		template<class F>
 		T unwrap_value_or_do(F && f) {
@@ -172,7 +187,10 @@ namespace gc {
 			static_assert(std::is_nothrow_constructible_v<T, gc::traits::function::return_type<F>::type>,
 				"gc::Result<T, E>::unwrap_value_or_do(f) f must return value, which can be used to noexcept construct T");
 
-			return std::move(is_ok() ? _get_value() : f());
+			if (is_ok())
+				return _get_value();
+			else
+				return std::move(f());
 		}
 		E unwrap_error() {
 			return std::move(_get_error());
@@ -183,7 +201,7 @@ namespace gc {
 				"gc::Result<T, E>::unwrap_value_or(args ...) T{args ...} must be nothrow constructible");
 			if (is_err())
 				return _get_error();
-			return {std::forward<Args>(args)...};
+			return std::forward<Args>(args)...;
 		}
 		template<class F>
 		E unwrap_error_or_do(F && f) {
@@ -194,7 +212,10 @@ namespace gc {
 			static_assert(std::is_nothrow_constructible_v<E, gc::traits::function::return_type<F>::type>,
 				"gc::Result<T, E>::unwrap_error_or_do argument must return value, which can be used to noexcept construct E");
 
-			return std::move(is_ok() ? f() : _get_error());
+			if (is_ok())
+				return std::move(f);
+			else
+				return _get_error();
 		}
 		//***************************gc::IClass implementation************************
 		Result && move() {
@@ -202,17 +223,4 @@ namespace gc {
 		}
 	};
 
-	enum class Error {
-		InvalidArgument,
-		DomainError,
-		SizeError,
-		OutOfRange,
-		FutureError,
-		RangeError,
-		OverflowError,
-		UnderflowError,
-		BadAlloc,
-		InsufficientRights,
-		UnknownError
-	};
 }

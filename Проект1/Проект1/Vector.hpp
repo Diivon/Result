@@ -9,24 +9,53 @@
 namespace gc {
 	namespace container {
 		template<class T, class Alloc = gc::memory::Allocator>
-		struct Vector : INonCopyable {
+		class Vector : INonCopyable {
 			static_assert(gc::traits::is_gc_allocator_v<Alloc>,
 				"second template argument do not match gc_allocator trait");
 		public:
+			//container
+			using iterator = T *;
+			using range = Range<iterator>;
+			
 			Vector(Vector && v) noexcept;
 			~Vector() noexcept;
 
-			unsigned length() const noexcept;
-			unsigned capacity() const noexcept;
-			bool operator == (const Vector &) const noexcept;
-			bool operator != (const Vector &) const noexcept;
+			unsigned 	length() const noexcept;
+			unsigned 	capacity() const noexcept;
+			Vector & 	clear() noexcept;
+			template<class ... Args>
+			iterator 	push(Args && ... ctor_args) noexcept;
+			bool 		empty() const noexcept;
+			Result<Vector &, Error> reserve() noexcept;
+			Result<Vector &, Error> shrink_to_fit() noexcept;
+			bool 		operator == (const Vector & rhs) const noexcept;
+			bool 		operator != (const Vector & rhs) const noexcept;
 
-			Vector && move() noexcept;
+			template<class Y>
+			Result<iterator, Error> find(Y && obj) const noexcept;
+
+
+			Result<T &, Error> 			at(unsigned index) noexcept;
+			Result<const T &, Error> 	at(unsigned index) const noexcept;
+			Result<T &, Error>			front() noexcept;
+			Result<const T &, Error>	front() const noexcept;
+			Result<T &, Error>			back() noexcept;
+			Result<const T &, Error>	back() const noexcept;
+
+			Vector && 						move() noexcept;
 			Result<Vector<T, Alloc>, Error> copy() const noexcept;
+
+
+			iterator 	begin() noexcept;
+			iterator 	end() noexcept;
+			range 		whole() noexcept;
+
 
 			static Vector<T, Alloc> make() noexcept;
 			template<class ... Args>
 			static Result<Vector<T, Alloc>, Error> make(unsigned count, Args && ... args) noexcept;
+			template<class ... Args>
+			static Result<Vector<T, Alloc>, Error> make_with_elements(Args && ... elements) noexcept;
 			static Result<Vector<T, Alloc>, Error> make_with_capacity(unsigned capacity) noexcept;
 			static Result<Vector<T, Alloc>, Error> make_from_raw(T * ptr, unsigned size, T * last = ptr) noexcept;
 		private:
@@ -84,7 +113,7 @@ namespace gc {
 				Alloc::deallocate(std::move(_mem));//guaranteed to be noexcept by allocator trait
 			}
 		}
-#pragma endregion
+	#pragma endregion
 	#pragma region make
 		template<class T, class Alloc>
 		Vector<T, Alloc> Vector<T, Alloc>::make() noexcept {
@@ -126,6 +155,20 @@ namespace gc {
 			return Ok(Vector<T, Alloc> {memory::Slice{ ptr, count }.move(), last});
 		}
 	#pragma endregion
+	#pragma region container
+		template<class T, class Alloc>
+		typename Vector<T, Alloc>::iterator Vector<T, Alloc>::begin() noexcept{
+			return _mem.begin_as<T>();
+		}
+		template<class T, class Alloc>
+		typename Vector<T, Alloc>::iterator Vector<T, Alloc>::end() noexcept{
+			return _last;
+		}
+		template<class T, class Alloc>
+		typename Vector<T, Alloc>::range Vector<T, Alloc>::whole() noexcept{
+			return {begin(), end()};
+		}
+	#pragma endregion
 	#pragma region methods
 		template<class T, class Alloc>
 		unsigned Vector<T, Alloc>::length() const noexcept {
@@ -134,6 +177,25 @@ namespace gc {
 		template<class T, class Alloc>
 		unsigned Vector<T, Alloc>::capacity() const noexcept {
 			return _mem.end_as<T>() - _mem.begin_as<T>();
+		}
+		template<class T, class Alloc>
+		Vector<T, Alloc> & Vector<T, Alloc>::clear() noexcept {
+			for (T * i = _mem.begin_as<T>(); i < _last; ++i)
+				i->~T();
+			_last = _mem.begin_as<T>();
+			return *this;
+		}
+		template<class T, class Alloc>
+		bool Vector<T, Alloc>::empty() const noexcept {
+			return (_last - _mem.begin_as<T>()) == 0;
+		}
+		template<class T, class Alloc>
+		template<class ... Args>
+		typename Vector<T, Alloc>::iterator Vector<T, Alloc>::push(Args && ... ctor_args) noexcept{
+			auto ptr = _last++;
+			new(ptr) T(std::forward<Args>(ctor_args)...);
+			_mem.inc_size(sizeof(T));
+			return ptr;
 		}
 
 		template<class T, class Alloc>
@@ -146,7 +208,7 @@ namespace gc {
 			return true;
 		}
 		template<class T, class Alloc>
-		bool Vector<T, Alloc>::operator == (const Vector<T, Alloc> & v) const noexcept{
+		bool Vector<T, Alloc>::operator != (const Vector<T, Alloc> & v) const noexcept{
 			return !(*this == v);
 		}
 
@@ -171,7 +233,6 @@ namespace gc {
 				})
 			;
 		}
-
 	#pragma endregion
 #pragma endregion
 	}

@@ -25,28 +25,62 @@ gc::Result<int, gc::Error> get(int a) {
 }
 
 template<class T>
-void debug(T && t) {
-	std::cout << gc::traits::TypeName<T>::get() << ':' << ' ' << t << std::endl;
+void println(T && t) {
+	std::cout << t << std::endl;
 }
 
-struct A : gc::INonCopyable {
-	int a;
-	A(A &&) noexcept {}
-	A(int && b) noexcept : a(b) {
-		std::cout << "&&" << std::endl;
-	}
+class A {
+public:
+	A() noexcept { println("A()"); }
+	A(int) noexcept { println("A(int)"); }
+	A(A &&) noexcept { println("A(&&)"); }
+	A(const A &) noexcept { println("A(const &)"); }
+	void operator = (const A &) noexcept { println("= (const &)"); }
+	void operator = (A &&) noexcept { println("= (&&)"); }
+	~A() noexcept { println("~A()"); }
+	bool operator == (const A &) noexcept { return true; }
 };
+
+template<class T>
+void debug(T && t) {
+	std::cout << gc::TypeName<T>::get() << ':' << ' ' << t << std::endl;
+}
 
 int main() {
 	using namespace gc::container;
+	/*
 	Vector<int>::make(5, 45)
 		.on_success([](Vector<int> && v1) {
-			Vector<int>::make(5, 45)
-				.on_success([&](Vector<int> && v2) {
-					assert(v1 == v2);
-					return gc::Ok(v2.move());
-				});
+			v1.whole()
+				.map([](const int & i) {
+					return i * i; 
+				})
+				.foreach([](const int & i) {
+					debug(i);
+				})
+			;
 			return gc::Ok(v1.move());
+		})
+	;
+	*/
+	Vector<A>::make(3)
+		.on_success([](Vector<A> && a) {
+			Vector<int>::make(3)
+				.map_result_type<Vector<A>>([&](Vector<int> && v) {
+					return Vector<A>::make_with_capacity(3)
+						.on_success([&](Vector<A> && a) {
+							a.push();
+							a.push();
+							a.push();
+							return gc::Ok(a.move());
+						}).move();
+				})
+				.on_success([&](Vector<A> && b) {
+					println("answer");
+					println(b == a);
+					return gc::Ok(b.move());
+				});
+			return gc::Ok(a.move());
 		})
 	;
 	std::cin.get();
