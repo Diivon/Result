@@ -59,6 +59,7 @@ namespace gc {
 			static Result<Vector<T, Alloc>, Error> make_with_capacity(unsigned capacity) noexcept;
 			static Result<Vector<T, Alloc>, Error> make_from_raw(T * ptr, unsigned size, T * last = ptr) noexcept;
 		private:
+			void _reallocate(unsigned new_size) noexcept;
 			///slice of allocated memory
 			memory::Slice _mem;
 			///ptr to memory behind last element
@@ -212,6 +213,19 @@ namespace gc {
 			return !(*this == v);
 		}
 
+
+		template<class T, class Alloc>
+		Result<memory::Slice, Error> Vector<T, Alloc>::_reallocate(unsigned new_size) {
+			static_assert(std::nothrow_move_constructible_v<T>, "Vector<T>::realloc requires nothrow move constructible T");
+			return Alloc::allocate(new_size * sizeof(T))
+				.on_success([this](memory::Slice && m) {				
+					for (unsigned i = 0; i < length(); ++i)
+						new(_m.begin_as<T>() + i) T(std::move(_mem.begin_as<T>()[i]));
+					for (T * i = _mem.begin_as<T>(); i < _last; ++i)
+						i->~T();
+					return gc::Ok(m.move());
+				});
+		}
 		template<class T, class Alloc>
 		Vector<T, Alloc> && Vector<T, Alloc>::move() noexcept {
 			return std::move(*this);
